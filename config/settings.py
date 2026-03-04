@@ -20,12 +20,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-*kulih^9o)79ukftspzew@k^uuq-g*bi6h2&6r+%$mreq-q1at'
+SECRET_KEY = 'django-insecure-*kulih^9o)79ukftspzew@k^uuq-g*bi6h2&6r+*$mreq-qlat'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -37,6 +37,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Third-party
+    'rest_framework',
+    # Local apps
+    'accounts',
+    'products',
 ]
 
 MIDDLEWARE = [
@@ -77,6 +82,26 @@ DATABASES = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
+}
+
+
+# ──────────────────────────────────────────────
+# Custom User Model (S1-T2)
+# ──────────────────────────────────────────────
+AUTH_USER_MODEL = 'accounts.User'
+
+
+# ──────────────────────────────────────────────
+# Django REST Framework (S1-T1)
+# ──────────────────────────────────────────────
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
 }
 
 
