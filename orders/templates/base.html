@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Bristol Food Network{% endblock %}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: Georgia, 'Times New Roman', serif;
+            background: #f5f0eb;
+            color: #2c2c2c;
+            min-height: 100vh;
+        }
+
+        /* ------------------------ Navigation ------------------------ */
+        nav {
+            background: #2d5016;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        nav .brand {
+            color: #f5f0eb;
+            font-size: 1.3rem;
+            font-weight: bold;
+            text-decoration: none;
+            letter-spacing: 0.5px;
+        }
+        nav .links { display: flex; gap: 1.5rem; }
+        nav .links a {
+            color: #c8dbb0;
+            text-decoration: none;
+            font-size: 0.95rem;
+        }
+        nav .links a:hover { color: #fff; }
+
+        /* ---------------------- Main container ------------------------ */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            color: #2d5016;
+            margin-bottom: 0.5rem;
+        }
+        h2 {
+            font-size: 1.3rem;
+            color: #2d5016;
+            margin-bottom: 0.5rem;
+        }
+
+        /* ------------------------- Messages -------------------------- */
+        .messages {
+            margin-bottom: 0;
+            margin-top: -0.5rem;
+        }
+        .msg {
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+        }
+        .msg.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .msg.error   { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        /* ------------------------- Buttons -------------------------- */
+        .btn {
+            display: inline-block;
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            text-decoration: none;
+            text-align: center;
+        }
+        .btn-primary { background: #2d5016; color: #fff; }
+        .btn-primary:hover { background: #3a6b1d; }
+        .btn-danger  { background: #a8332a; color: #fff; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-outline {
+            background: transparent;
+            color: #2d5016;
+            border: 2px solid #2d5016;
+        }
+        .btn-outline:hover { background: #2d5016; color: #fff; }
+        .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.82rem; }
+
+        /* ------------------------- Forms -------------------------- */
+        input[type="number"],
+        input[type="text"],
+        select {
+            padding: 0.45rem 0.6rem;
+            border: 1px solid #bbb;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            background: #fff;
+        }
+        input[type="number"] { width: 70px; text-align: center; }
+
+        /* --------------- Fixed-height table container ------------ */
+        .table-container {
+            min-height: calc(var(--table-rows) * 2.6rem + 2.6rem);
+        }
+        .table-container table {
+            table-layout: fixed;
+        }
+
+        /* ------------------------ Table --------------------------- */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        th, td {
+            text-align: left;
+            padding: 0.4rem 0.75rem;
+            border-bottom: 1px solid #ddd;
+            height: 2.6rem;
+            vertical-align: middle;
+        }
+        th {
+            background: #2d5016;
+            color: #fff;
+            font-weight: normal;
+            font-size: 0.9rem;
+            letter-spacing: 0.3px;
+        }
+        td { font-size: 0.95rem; }
+        tr:hover { background: #f0ebe4; }
+
+        /* ---------------------- Pagination ----------------------- */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 2rem 0 1rem;
+        }
+        .pagination a, .pagination span {
+            padding: 0.4rem 0.85rem;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .pagination a { background: #fff; color: #2d5016; border: 1px solid #ccc; }
+        .pagination a:hover { background: #2d5016; color: #fff; }
+        .pagination .current {
+            background: #2d5016;
+            color: #fff;
+            border: 1px solid #2d5016;
+        }
+
+        /* ------------------------ Toolbar ------------------------ */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .toolbar .cart-select {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        /* ------------------ Order summary box ----------------------- */
+        .summary-box {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-top: 1.5rem;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.4rem 0;
+            font-size: 0.95rem;
+        }
+        .summary-row.total {
+            border-top: 2px solid #2d5016;
+            margin-top: 0.5rem;
+            padding-top: 0.75rem;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        /* ------------------------ Footer bar ------------------------ */
+        .footer-bar {
+            position: sticky;
+            bottom: 0;
+            background: #fff;
+            border-top: 2px solid #2d5016;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+        }
+
+        /* ----------------------- Empty state ------------------------ */
+        .empty {
+            text-align: center;
+            padding: 3rem;
+            color: #888;
+            font-size: 1.05rem;
+        }
+
+        /* ------------------------ Utility --------------------------- */
+        .mt-1 { margin-top: 1rem; }
+        .mb-1 { margin-bottom: 1rem; }
+        .text-right { text-align: right; }
+        .inline-form { display: inline; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="{% url 'orders:product_list' %}" class="brand">Bristol Food Network</a>
+    <div class="links">
+        <a href="{% url 'orders:product_list' %}">Shop</a>
+        <a href="{% url 'orders:cart_list' %}">My Carts</a>
+        <a href="{% url 'orders:order_list' %}">Orders</a>
+        <a href="{% url 'admin:index' %}">Admin</a>
+    </div>
+</nav>
+
+<div class="container">
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="msg {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+</div>
+
+</body>
+</html>
