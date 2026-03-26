@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -39,9 +40,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Third-party
     'rest_framework',
+    'rest_framework_simplejwt',
     # Local apps
     'accounts',
     'products',
+    'cart',
 ]
 
 MIDDLEWARE = [
@@ -86,22 +89,32 @@ DATABASES = {
 
 
 # ──────────────────────────────────────────────
-# Custom User Model (S1-T2)
+# Custom User Model
 # ──────────────────────────────────────────────
 AUTH_USER_MODEL = 'accounts.User'
 
 
 # ──────────────────────────────────────────────
-# Django REST Framework (S1-T1)
+# Django REST Framework (S2-T1: JWT Authentication)
 # ──────────────────────────────────────────────
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.BasicAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+}
+
+
+# ──────────────────────────────────────────────
+# SimpleJWT Configuration (S2-T1)
+# ──────────────────────────────────────────────
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
 
