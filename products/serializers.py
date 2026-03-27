@@ -1,4 +1,5 @@
 from rest_framework import serializers
+
 from .models import Category, Product
 
 
@@ -16,6 +17,7 @@ class ProductSerializer(serializers.ModelSerializer):
         write_only=True,
     )
     producer = serializers.StringRelatedField(read_only=True)
+    producer_username = serializers.ReadOnlyField(source="producer.username")
 
     class Meta:
         model = Product
@@ -35,10 +37,11 @@ class ProductSerializer(serializers.ModelSerializer):
             "category",
             "category_id",
             "producer",
+            "producer_username",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["created_at", "updated_at"]
+        read_only_fields = ["producer", "producer_username", "created_at", "updated_at"]
 
     def validate_name(self, value):
         if not value or not value.strip():
@@ -83,17 +86,14 @@ class ProductSerializer(serializers.ModelSerializer):
                 "Both season start month and season end month must be provided together."
             )
 
-        if availability_status == "unavailable":
-            if is_available is True:
-                raise serializers.ValidationError(
-                    {"is_available": "Unavailable products cannot be marked as available."}
-                )
+        if availability_status == "unavailable" and is_available is True:
+            raise serializers.ValidationError(
+                {"is_available": "Unavailable products cannot be marked as available."}
+            )
 
         if stock_quantity == 0 and availability_status == "available" and is_available is True:
             raise serializers.ValidationError(
-                {
-                    "stock_quantity": "Available products should have stock greater than 0."
-                }
+                {"stock_quantity": "Available products should have stock greater than 0."}
             )
 
         return attrs

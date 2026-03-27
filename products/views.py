@@ -1,7 +1,12 @@
 from django.db.models import Q
 from django.utils import timezone
-from rest_framework import generics, filters
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+
+from rest_framework import generics, filters, status
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from accounts.permissions import IsProducer
 
 from .models import Category, Product
 from .serializers import CategorySerializer, ProductSerializer
@@ -33,10 +38,10 @@ class ProductListAPIView(generics.ListCreateAPIView):
 
         if search:
             queryset = queryset.filter(
-                Q(name__icontains=search) |
-                Q(description__icontains=search) |
-                Q(category__name__icontains=search) |
-                Q(producer__username__icontains=search)
+                Q(name__icontains=search)
+                | Q(description__icontains=search)
+                | Q(category__name__icontains=search)
+                | Q(producer__username__icontains=search)
             )
 
         if is_available is not None:
@@ -51,14 +56,14 @@ class ProductListAPIView(generics.ListCreateAPIView):
         current_month = timezone.now().month
 
         queryset = queryset.filter(
-            Q(availability_status="available") |
-            Q(availability_status="unavailable") |
-            Q(
+            Q(availability_status="available")
+            | Q(availability_status="unavailable")
+            | Q(
                 availability_status="in_season",
                 season_start_month__isnull=True,
                 season_end_month__isnull=True,
-            ) |
-            Q(
+            )
+            | Q(
                 availability_status="in_season",
                 season_start_month__lte=current_month,
                 season_end_month__gte=current_month,
@@ -66,6 +71,16 @@ class ProductListAPIView(generics.ListCreateAPIView):
         )
 
         return queryset
+
+
+class ProductCreateView(APIView):
+    permission_classes = [IsAuthenticated, IsProducer]
+
+    def post(self, request):
+        serializer = ProductSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(producer=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class ProductDetailAPIView(generics.RetrieveUpdateDestroyAPIView):

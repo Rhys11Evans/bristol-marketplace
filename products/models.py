@@ -1,5 +1,5 @@
+from django.conf import settings
 from django.db import models
-from django.contrib.auth.models import User
 
 
 class Category(models.Model):
@@ -33,10 +33,10 @@ class Product(models.Model):
     category = models.ForeignKey(
         Category,
         on_delete=models.CASCADE,
-        related_name="products"
+        related_name="products",
     )
     producer = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="products",
         null=True,
@@ -48,7 +48,7 @@ class Product(models.Model):
     unit = models.CharField(
         max_length=20,
         choices=UNIT_CHOICES,
-        default="item"
+        default="item",
     )
 
     stock_quantity = models.PositiveIntegerField(default=0)
@@ -56,7 +56,7 @@ class Product(models.Model):
     availability_status = models.CharField(
         max_length=20,
         choices=AVAILABILITY_CHOICES,
-        default="available"
+        default="available",
     )
 
     allergen_info = models.CharField(max_length=255, blank=True)
