@@ -1,0 +1,167 @@
+{% extends "cart/base.html" %}
+{% block title %}Shop – Bristol Food Network{% endblock %}
+
+{% block content %}
+<h1>Shop Local Produce</h1>
+
+<!-- Search bar -->
+<div class="toolbar">
+    <form method="get" action="{% url 'cart:product_list' %}" style="display:flex; gap:0.5rem; align-items:center;">
+        <input type="text" name="search" value="{{ search_query }}" placeholder="Search products…"
+               style="width:250px; padding:0.5rem 0.75rem;">
+        <button type="submit" class="btn btn-primary btn-sm">Search</button>
+        {% if search_query %}
+        <a href="{% url 'cart:product_list' %}?cart={{ selected_cart_id }}" class="btn btn-outline btn-sm">Clear</a>
+        {% endif %}
+        <input type="hidden" name="cart" value="{{ selected_cart_id }}">
+    </form>
+</div>
+
+<!-- Filters row -->
+<div class="toolbar" style="margin-top:0;">
+    <form method="get" action="{% url 'cart:product_list' %}" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
+
+        <!-- Category filter -->
+        <div style="display:flex; align-items:center; gap:0.4rem;">
+            <label for="filter-cat" style="font-size:0.9rem;">Category:</label>
+            <select name="category" id="filter-cat" onchange="this.form.submit()">
+                <option value="">All</option>
+                {% for cat in categories %}
+                <option value="{{ cat.pk }}" {% if selected_category|slugify == cat.pk|slugify %}selected{% endif %}>
+                    {{ cat.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Producer filter -->
+        <div style="display:flex; align-items:center; gap:0.4rem;">
+            <label for="filter-prod" style="font-size:0.9rem;">Producer:</label>
+            <select name="producer" id="filter-prod" onchange="this.form.submit()">
+                <option value="">All</option>
+                {% for prod in producers %}
+                <option value="{{ prod.pk }}" {% if selected_producer|slugify == prod.pk|slugify %}selected{% endif %}>
+                    {{ prod.username }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Cart selector -->
+        <div style="display:flex; align-items:center; gap:0.4rem;">
+            <label for="cart-select" style="font-size:0.9rem;">Adding to:</label>
+            <select name="cart" id="cart-select" onchange="this.form.submit()">
+                {% for cart in carts %}
+                <option value="{{ cart.pk }}" {% if cart.pk == selected_cart_id %}selected{% endif %}>
+                    {{ cart.name }} ({{ cart.item_count }} items)
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        {% if search_query %}
+        <input type="hidden" name="search" value="{{ search_query }}">
+        {% endif %}
+    </form>
+</div>
+
+{% if search_query %}
+<p style="color:#666; margin-bottom:1rem;">
+    Showing results for "<strong>{{ search_query }}</strong>" —
+    {{ page_obj.paginator.count }} product{{ page_obj.paginator.count|pluralize }} found
+</p>
+{% endif %}
+
+<!-- Product table -->
+{% if page_obj.object_list %}
+<div class="table-container" style="--table-rows: 9;">
+    <table>
+        <thead>
+            <colgroup>
+                <col style="width: 15%;">
+                <col style="width: 12%;">
+                <col style="width: 13%;">
+                <col style="width: 9%;">
+                <col style="width: 9%;">
+                <col style="width: 18%;">
+                <col style="width: 17%;">
+                <col style="width: 7%;">
+            </colgroup>
+            <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Producer</th>
+                <th>Price</th>
+                <th>In Stock</th>
+                <th>Allergens</th>
+                <th>Qty</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in page_obj %}
+            <tr>
+                <td><strong>{{ product.name }}</strong></td>
+                <td>{{ product.category }}</td>
+                <td>{% if product.producer %}{{ product.producer.username }}{% else %}<em style="color:#777;">–</em>{% endif %}</td>
+                <td>£{{ product.price }}</td>
+                <td>{{ product.stock_quantity }}</td>
+                <td>{% if product.allergen_info %}<span style="color:#a8332a;">{{ product.allergen_info }}</span>{% endif %}</td>
+                <td>
+                    <form method="post" action="{% url 'cart:add_to_cart' %}" style="display:flex; gap:0.4rem; align-items:center;">
+                        {% csrf_token %}
+                        <input type="hidden" name="product_id" value="{{ product.pk }}">
+                        <input type="hidden" name="cart_id" value="{{ selected_cart_id }}">
+                        <input type="number" name="quantity" value="1" min="1" max="{{ product.stock_quantity }}">
+                        <button type="submit" class="btn btn-primary btn-sm">Add</button>
+                    </form>
+                </td>
+                <td></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty">
+    {% if search_query %}
+        No products match "{{ search_query }}".
+        <a href="{% url 'cart:product_list' %}?cart={{ selected_cart_id }}">Clear search</a>
+    {% elif selected_category %}
+        No products in this category.
+        <a href="{% url 'cart:product_list' %}?cart={{ selected_cart_id }}">Show all</a>
+    {% else %}
+        No products available right now.
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<div class="pagination">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&cart={{ selected_cart_id }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_producer %}&producer={{ selected_producer }}{% endif %}">Previous</a>
+    {% endif %}
+
+    {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <span class="current">{{ num }}</span>
+        {% else %}
+        <a href="?page={{ num }}&cart={{ selected_cart_id }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_producer %}&producer={{ selected_producer }}{% endif %}">{{ num }}</a>
+        {% endif %}
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&cart={{ selected_cart_id }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_producer %}&producer={{ selected_producer }}{% endif %}">Next</a>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Sticky footer bar -->
+<div class="footer-bar">
+    <span>Browsing {{ page_obj.paginator.count }} products</span>
+    <a href="{% url 'cart:cart_detail' selected_cart_id %}" class="btn btn-primary">
+        View Cart
+    </a>
+</div>
+{% endblock %}

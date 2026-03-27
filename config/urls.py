@@ -24,6 +24,12 @@ urlpatterns = [
 =======
     path("admin/", admin.site.urls),
     path("api/", include("products.urls")),
+<<<<<<< Updated upstream
     path("", include("orders.urls")),     #Cart & Order routes
+]
+>>>>>>> Stashed changes
+=======
+    path("accounts/", include("accounts.urls")),
+    path("", include("cart.urls")),
 ]
 >>>>>>> Stashed changes
