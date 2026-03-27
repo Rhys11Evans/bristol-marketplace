@@ -1,0 +1,145 @@
+{% extends "cart/base.html" %}
+{% block title %}Order #{{ order.pk }} – Bristol Food Network{% endblock %}
+
+{% block content %}
+<h1>Order Confirmed!</h1>
+<p style="color:#555; margin-bottom:1.5rem;">Thank you for supporting local producers.</p>
+
+<div class="summary-box">
+    <h2 style="margin-bottom:0.25rem;">Order #{{ order.pk }}</h2>
+    <p style="font-size:0.9rem; color:#777; margin-bottom:1rem;">
+        Placed {{ order.created_at|date:"d M Y, H:i" }} · Status: <strong>{{ order.get_status_display }}</strong>
+    </p>
+
+    <div class="table-container" style="--table-rows: 6;">
+        <table>
+            <colgroup>
+                <col style="width: 22%;">
+                <col style="width: 18%;">
+                <col style="width: 20%;">
+                <col style="width: 12%;">
+                <col style="width: 10%;">
+                <col style="width: 14%;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th><a href="#" class="sort-link" data-field="name" style="color:#fff; text-decoration:none;">
+                        Product
+                        {% if sort_by == "name" %}{% if sort_dir == "asc" %}▲{% else %}▼{% endif %}{% endif %}
+                        {% if secondary == "name" %}{% if secondary_dir == "asc" %}△{% else %}▽{% endif %}{% endif %}
+                    </a></th>
+                    <th><a href="#" class="sort-link" data-field="category" style="color:#fff; text-decoration:none;">
+                        Category
+                        {% if sort_by == "category" %}{% if sort_dir == "asc" %}▲{% else %}▼{% endif %}{% endif %}
+                        {% if secondary == "category" %}{% if secondary_dir == "asc" %}△{% else %}▽{% endif %}{% endif %}
+                    </a></th>
+                    <th><a href="#" class="sort-link" data-field="producer" style="color:#fff; text-decoration:none;">
+                        Producer
+                        {% if sort_by == "producer" %}{% if sort_dir == "asc" %}▲{% else %}▼{% endif %}{% endif %}
+                        {% if secondary == "producer" %}{% if secondary_dir == "asc" %}△{% else %}▽{% endif %}{% endif %}
+                    </a></th>
+                    <th><a href="#" class="sort-link" data-field="unit_price" style="color:#fff; text-decoration:none;">
+                        Unit Price
+                        {% if sort_by == "unit_price" %}{% if sort_dir == "asc" %}▲{% else %}▼{% endif %}{% endif %}
+                        {% if secondary == "unit_price" %}{% if secondary_dir == "asc" %}△{% else %}▽{% endif %}{% endif %}
+                    </a></th>
+                    <th><a href="#" class="sort-link" data-field="quantity" style="color:#fff; text-decoration:none;">
+                        Qty
+                        {% if sort_by == "quantity" %}{% if sort_dir == "asc" %}▲{% else %}▼{% endif %}{% endif %}
+                        {% if secondary == "quantity" %}{% if secondary_dir == "asc" %}△{% else %}▽{% endif %}{% endif %}
+                    </a></th>
+                    <th><a href="#" class="sort-link" data-field="total_price" style="color:#fff; text-decoration:none;">
+                        Total
+                        {% if sort_by == "total_price" %}{% if sort_dir == "asc" %}▲{% else %}▼{% endif %}{% endif %}
+                        {% if secondary == "total_price" %}{% if secondary_dir == "asc" %}△{% else %}▽{% endif %}{% endif %}
+                    </a></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in page_obj %}
+                <tr>
+                    <td><strong>{{ item.product.name }}</strong></td>
+                    <td>{{ item.product.category }}</td>
+                    <td>{% if item.product.producer %}{{ item.product.producer.username }}{% else %}<em style="color:#777;">–</em>{% endif %}</td>
+                    <td>£{{ item.item_price }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>£{{ item.line_total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&sort={{ sort_by }}&dir={{ sort_dir }}&secondary={{ secondary }}&sdir={{ secondary_dir }}">Previous</a>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <span class="current">{{ num }}</span>
+            {% else %}
+            <a href="?page={{ num }}&sort={{ sort_by }}&dir={{ sort_dir }}&secondary={{ secondary }}&sdir={{ secondary_dir }}">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&sort={{ sort_by }}&dir={{ sort_dir }}&secondary={{ secondary }}&sdir={{ secondary_dir }}">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div style="margin-top:1.5rem;">
+        <div class="summary-row">
+            <span>Food</span>
+            <span>£{{ food_total|floatformat:2 }}</span>
+        </div>
+        <div class="summary-row">
+            <span>Commission (5%)</span>
+            <span>£{{ commission|floatformat:2 }}</span>
+        </div>
+        <div class="summary-row total">
+            <span>Total</span>
+            <span>£{{ total|floatformat:2 }}</span>
+        </div>
+    </div>
+</div>
+
+<div style="margin-top:2rem; display:flex; gap:1rem;">
+    <a href="{% url 'cart:product_list' %}" class="btn btn-primary">Continue Shopping</a>
+    <a href="{% url 'cart:order_list' %}" class="btn btn-outline">View All Orders</a>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var currentSort = "{{ sort_by }}";
+    var currentDir = "{{ sort_dir }}";
+    var currentSecondary = "{{ secondary }}";
+    var currentSdir = "{{ secondary_dir }}";
+
+    document.querySelectorAll(".sort-link").forEach(function (link) {
+        link.addEventListener("click", function (e) {
+            e.preventDefault();
+            var field = this.dataset.field;
+
+            if (e.shiftKey) {
+                var newSdir;
+                if (field === currentSecondary) {
+                    newSdir = (currentSdir === "asc") ? "desc" : "asc";
+                } else {
+                    newSdir = "asc";
+                }
+                window.location.href = "?sort=" + currentSort + "&dir=" + currentDir
+                    + "&secondary=" + field + "&sdir=" + newSdir;
+            } else {
+                var newDir = (field === currentSort && currentDir === "asc") ? "desc" : "asc";
+                window.location.href = "?sort=" + field + "&dir=" + newDir
+                    + "&secondary=" + currentSecondary + "&sdir=" + currentSdir;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
