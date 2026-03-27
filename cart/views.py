@@ -1,6 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import F, ExpressionWrapper, DecimalField
@@ -51,7 +50,8 @@ def product_list(request):
     # ------------------ filter options for dropdowns --------------------
     categories = Category.objects.order_by("name")
 
-    # get producers who actually have products listed  
+    # get producers who actually have products listed
+    from django.contrib.auth import get_user_model
     User = get_user_model()
     producers = User.objects.filter(products__isnull=False).distinct().order_by("username")
 
