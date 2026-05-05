@@ -1,26 +1,28 @@
 from django.db.models import Q
 from django.utils import timezone
 
-from rest_framework import generics, filters, status
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework import filters, generics, status
+from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.permissions import IsProducer
 
 from .models import Category, Product
+from .permissions import IsProducerForWriteOrReadOnly
 from .serializers import CategorySerializer, ProductSerializer
-from .permissions import IsOwnerOrReadOnly
 
 
 class CategoryListAPIView(generics.ListAPIView):
     queryset = Category.objects.all().order_by("name")
     serializer_class = CategorySerializer
+    permission_classes = [AllowAny]
 
 
 class ProductListAPIView(generics.ListCreateAPIView):
     serializer_class = ProductSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsProducerForWriteOrReadOnly]
     filter_backends = [filters.OrderingFilter]
     ordering_fields = ["name", "price", "stock_quantity", "created_at"]
     ordering = ["name"]
@@ -45,12 +47,29 @@ class ProductListAPIView(generics.ListCreateAPIView):
             )
 
         if is_available is not None:
-            if is_available.lower() == "true":
+            value = is_available.lower()
+
+            if value == "true":
                 queryset = queryset.filter(is_available=True)
-            elif is_available.lower() == "false":
+            elif value == "false":
                 queryset = queryset.filter(is_available=False)
+            else:
+                raise ValidationError(
+                    {
+                        "is_available": "Use true or false for this filter."
+                    }
+                )
 
         if availability_status:
+            valid_statuses = [choice[0] for choice in Product.AVAILABILITY_CHOICES]
+
+            if availability_status not in valid_statuses:
+                raise ValidationError(
+                    {
+                        "availability_status": f"Invalid value. Use one of: {', '.join(valid_statuses)}."
+                    }
+                )
+
             queryset = queryset.filter(availability_status=availability_status)
 
         current_month = timezone.now().month
@@ -72,9 +91,12 @@ class ProductListAPIView(generics.ListCreateAPIView):
 
         return queryset
 
+    def perform_create(self, serializer):
+        serializer.save(producer=self.request.user)
+
 
 class ProductCreateView(APIView):
-    permission_classes = [IsAuthenticated, IsProducer]
+    permission_classes = [IsProducer]
 
     def post(self, request):
         serializer = ProductSerializer(data=request.data)
@@ -86,4 +108,4 @@ class ProductCreateView(APIView):
 class ProductDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.select_related("category", "producer").all()
     serializer_class = ProductSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+    permission_classes = [IsProducerForWriteOrReadOnly]
