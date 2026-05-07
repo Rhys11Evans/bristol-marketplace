@@ -75,25 +75,54 @@ class ProductSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
-        season_start_month = attrs.get("season_start_month")
-        season_end_month = attrs.get("season_end_month")
-        availability_status = attrs.get("availability_status")
-        stock_quantity = attrs.get("stock_quantity")
-        is_available = attrs.get("is_available")
+        if self.instance:
+            stock_quantity = attrs.get("stock_quantity", self.instance.stock_quantity)
+            is_available = attrs.get("is_available", self.instance.is_available)
+            availability_status = attrs.get(
+                "availability_status",
+                self.instance.availability_status,
+            )
+            season_start_month = attrs.get(
+                "season_start_month",
+                self.instance.season_start_month,
+            )
+            season_end_month = attrs.get(
+                "season_end_month",
+                self.instance.season_end_month,
+            )
+        else:
+            stock_quantity = attrs.get("stock_quantity", 0)
+            is_available = attrs.get("is_available", True)
+            availability_status = attrs.get("availability_status", "available")
+            season_start_month = attrs.get("season_start_month")
+            season_end_month = attrs.get("season_end_month")
 
         if (season_start_month is None) != (season_end_month is None):
             raise serializers.ValidationError(
-                "Both season start month and season end month must be provided together."
+                {
+                    "season": "Both season start month and season end month must be provided together."
+                }
             )
 
-        if availability_status == "unavailable" and is_available is True:
+        if availability_status == "unavailable" and is_available:
             raise serializers.ValidationError(
-                {"is_available": "Unavailable products cannot be marked as available."}
+                {
+                    "is_available": "Unavailable products cannot be marked as available."
+                }
             )
 
-        if stock_quantity == 0 and availability_status == "available" and is_available is True:
+        if is_available and stock_quantity <= 0:
             raise serializers.ValidationError(
-                {"stock_quantity": "Available products should have stock greater than 0."}
+                {
+                    "stock_quantity": "Available products must have stock greater than 0."
+                }
+            )
+
+        if availability_status == "available" and stock_quantity <= 0:
+            raise serializers.ValidationError(
+                {
+                    "availability_status": "A product cannot be available when stock is 0."
+                }
             )
 
         return attrs

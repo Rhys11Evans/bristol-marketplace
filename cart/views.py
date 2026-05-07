@@ -1,45 +1,81 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model, logout
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import F, ExpressionWrapper, DecimalField
 from decimal import Decimal
 
 from products.models import Product, Category
+from products.services import reduce_product_stock
 
 from .models import Cart, CartItem, Order, OrderItem
 from .forms import AddToCartForm, CreateCartForm, UpdateQuantityForm
+
+User = get_user_model()
+
+
+def check_customer(request):
+    # only customers and admin can access shop pages
+    if not (request.user.is_customer or request.user.is_staff):
+        messages.error(request, "Only customers can access this page.")
+        return redirect("cart:producer_order_list")
+    return None
+
+
+def check_producer(request):
+    # only producers and admin can access producer pages
+    if not (request.user.is_producer or request.user.is_staff):
+        messages.error(request, "Only producers can access this page.")
+        return redirect("cart:product_list")
+    return None
+
+
+def logout_view(request):
+    logout(request)
+    return redirect("login")
+
+
+# home redirect based on role
+@login_required
+def home(request):
+    if hasattr(request.user, 'is_producer') and request.user.is_producer:
+        return redirect("cart:producer_order_list")
+    return redirect("cart:product_list")
 
 
 # -------------------------- Product listing -----------------------------
 @login_required
 def product_list(request):
-    # Paginated product listing table with search and filtering
+    blocked = check_customer(request)
+    if blocked:
+        return blocked
+
     products = Product.objects.filter(is_available=True)
 
-    # -------------------------- search ----------------------------------
+    # search
     search_query = request.GET.get("search", "").strip()
     if search_query:
         products = products.filter(name__icontains=search_query)
 
-    # --------------------- filter by category ---------------------------
+    # filter by category
     category_id = request.GET.get("category", "")
     if category_id:
         products = products.filter(category_id=category_id)
 
-    # --------------------- filter by producer ---------------------------
+    # filter by producer
     producer_id = request.GET.get("producer", "")
     if producer_id:
         products = products.filter(producer_id=producer_id)
 
-    # -------------------------- sorting ---------------------------------
+    # sorting
     products = products.order_by("category__name", "name")
 
-    # ------------------------- pagination -------------------------------
+    # pagination
     paginator = Paginator(products, 9)
     page_obj = paginator.get_page(request.GET.get("page"))
 
-    # -------------------------- carts -----------------------------------
+    # carts
     user_carts = Cart.objects.filter(user=request.user)
     if not user_carts.exists():
         Cart.objects.create(user=request.user, name="My Cart")
@@ -47,12 +83,8 @@ def product_list(request):
 
     selected_cart_id = request.GET.get("cart", user_carts.first().pk)
 
-    # ------------------ filter options for dropdowns --------------------
+    # filter options for dropdowns
     categories = Category.objects.order_by("name")
-
-    # get producers who actually have products listed
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
     producers = User.objects.filter(products__isnull=False).distinct().order_by("username")
 
     return render(request, "cart/product_list.html", {
@@ -69,7 +101,10 @@ def product_list(request):
 
 @login_required
 def add_to_cart(request):
-    # POST-only: add a product to the chosen cart
+    blocked = check_customer(request)
+    if blocked:
+        return blocked
+
     if request.method != "POST":
         return redirect("cart:product_list")
 
@@ -100,14 +135,20 @@ def add_to_cart(request):
 # ---------------------------- Cart management -------------------------------
 @login_required
 def cart_list(request):
-    # Shows all of the users carts
+    blocked = check_customer(request)
+    if blocked:
+        return blocked
+
     carts = Cart.objects.filter(user=request.user).order_by("-created_at")
     return render(request, "cart/cart_list.html", {"carts": carts})
 
 
 @login_required
 def create_cart(request):
-    # POST-only: create a new named cart
+    blocked = check_customer(request)
+    if blocked:
+        return blocked
+
     if request.method == "POST":
         form = CreateCartForm(request.POST)
         if form.is_valid():
@@ -120,7 +161,10 @@ def create_cart(request):
 
 @login_required
 def delete_cart(request, cart_id):
-    # POST-only: delete a cart
+    blocked = check_customer(request)
+    if blocked:
+        return blocked
+
     if request.method == "POST":
         cart = get_object_or_404(Cart, pk=cart_id, user=request.user)
         name = cart.name
@@ -141,7 +185,10 @@ CART_SORT_FIELDS = {
 
 @login_required
 def cart_detail(request, cart_id):
-    # View a single cart's contents
+    blocked = check_customer(request)
+    if blocked:
+        return blocked
+
     cart = get_object_or_404(Cart, pk=cart_id, user=request.user)
     items = (
         cart.items
@@ -154,7 +201,7 @@ def cart_detail(request, cart_id):
         )
     )
 
-    # -------------------------- sorting --------------------------------
+    # sorting
     sort_by = request.GET.get("sort", "category")
     sort_dir = request.GET.get("dir", "asc")
     secondary = request.GET.get("secondary", "name")
@@ -168,17 +215,16 @@ def cart_detail(request, cart_id):
     if secondary_dir == "desc":
         secondary_field = f"-{secondary_field}"
 
-    # avoid duplicate if primary and secondary are the same
     if CART_SORT_FIELDS.get(sort_by) == CART_SORT_FIELDS.get(secondary):
         items = items.order_by(primary_field)
     else:
         items = items.order_by(primary_field, secondary_field)
 
-    # ------------------------- pagination -------------------------------
+    # pagination
     paginator = Paginator(items, 6)
     page_obj = paginator.get_page(request.GET.get("page"))
 
-    # ----------------------- commission calc ----------------------------
+    # commission calc
     subtotal = cart.total
     commission = (subtotal * Decimal("0.05")).quantize(Decimal("0.01"))
     total = subtotal + commission
@@ -198,7 +244,10 @@ def cart_detail(request, cart_id):
 
 @login_required
 def update_cart_item(request, item_id):
-    # POST-only: change quantity of a cart item
+    blocked = check_customer(request)
+    if blocked:
+        return blocked
+
     if request.method != "POST":
         return redirect("cart:cart_list")
 
@@ -219,7 +268,10 @@ def update_cart_item(request, item_id):
 
 @login_required
 def remove_cart_item(request, item_id):
-    # POST-only: remove an item from the cart entirely
+    blocked = check_customer(request)
+    if blocked:
+        return blocked
+
     if request.method != "POST":
         return redirect("cart:cart_list")
 
@@ -234,6 +286,10 @@ def remove_cart_item(request, item_id):
 # ------------------------------ Checkout ----------------------------------
 @login_required
 def checkout(request, cart_id):
+    blocked = check_customer(request)
+    if blocked:
+        return blocked
+
     if request.method != "POST":
         return redirect("cart:cart_detail", cart_id=cart_id)
 
@@ -253,6 +309,8 @@ def checkout(request, cart_id):
             quantity=cart_item.quantity,
             item_price=cart_item.product.price,
         )
+        # reduce stock (uses Rhys's service)
+        reduce_product_stock(cart_item.product, cart_item.quantity)
 
     # calculate totals
     order.calculate_totals()
@@ -264,7 +322,7 @@ def checkout(request, cart_id):
     return redirect("cart:order_confirmation", order_id=order.pk)
 
 
-# ------------------------- Order Sorting ------------------------------
+# ------------------------- Customer Order Views ----------------------------
 ORDER_SORT_FIELDS = {
     "name": "product__name",
     "category": "product__category__name",
@@ -277,7 +335,10 @@ ORDER_SORT_FIELDS = {
 
 @login_required
 def order_confirmation(request, order_id):
-    # Show the completed order with totals and commission breakdown
+    blocked = check_customer(request)
+    if blocked:
+        return blocked
+
     order = get_object_or_404(Order, pk=order_id, user=request.user)
     items = (
         order.order_items
@@ -290,7 +351,7 @@ def order_confirmation(request, order_id):
         )
     )
 
-    # -------------------------- sorting --------------------------------
+    # sorting
     sort_by = request.GET.get("sort", "category")
     sort_dir = request.GET.get("dir", "asc")
     secondary = request.GET.get("secondary", "name")
@@ -309,11 +370,11 @@ def order_confirmation(request, order_id):
     else:
         items = items.order_by(primary_field, secondary_field)
 
-    # ------------------------ pagination -------------------------------
+    # pagination
     paginator = Paginator(items, 6)
     page_obj = paginator.get_page(request.GET.get("page"))
 
-    # ------------------- commission for display ------------------------
+    # commission for display
     food_total = order.total_price
     commission = order.commission
     total = food_total + commission
@@ -333,6 +394,82 @@ def order_confirmation(request, order_id):
 
 @login_required
 def order_list(request):
-    # Show all past orders
+    blocked = check_customer(request)
+    if blocked:
+        return blocked
+
     orders = Order.objects.filter(user=request.user).order_by("-created_at")
     return render(request, "cart/order_list.html", {"orders": orders})
+
+
+# ------------------------- Producer Order Views ----------------------------
+
+NEXT_STATUS = {
+    "pending": "confirmed",
+    "confirmed": "ready",
+    "ready": "delivered",
+}
+
+
+@login_required
+def producer_order_list(request):
+    blocked = check_producer(request)
+    if blocked:
+        return blocked
+
+    # only show orders that contain this producer's products
+    orders = (
+        Order.objects
+        .filter(order_items__product__producer=request.user)
+        .distinct()
+        .order_by("-created_at")
+    )
+
+    return render(request, "cart/producer_order_list.html", {"orders": orders})
+
+
+@login_required
+def producer_order_detail(request, order_id):
+    blocked = check_producer(request)
+    if blocked:
+        return blocked
+
+    order = get_object_or_404(Order, pk=order_id)
+
+    # only show items belonging to this producer
+    items = (
+        order.order_items
+        .filter(product__producer=request.user)
+        .select_related("product", "product__category")
+        .order_by("product__category__name", "product__name")
+    )
+
+    if not items.exists():
+        messages.error(request, "This order has no items from you.")
+        return redirect("cart:producer_order_list")
+
+    return render(request, "cart/producer_order_detail.html", {
+        "order": order,
+        "items": items,
+    })
+
+
+@login_required
+def update_item_status(request, item_id):
+    if request.method != "POST":
+        return redirect("cart:producer_order_list")
+
+    item = get_object_or_404(OrderItem, pk=item_id)
+    if item.product.producer != request.user and not request.user.is_staff:
+        messages.error(request, "You can only update your own items.")
+        return redirect("cart:producer_order_list")
+
+    next_status = NEXT_STATUS.get(item.status)
+    if next_status is None:
+        messages.error(request, f"{item.product.name} is already delivered.")
+    else:
+        item.status = next_status
+        item.save(update_fields=["status"])
+        messages.success(request, f"{item.product.name} updated to {item.get_status_display()}.")
+
+    return redirect("cart:producer_order_detail", order_id=item.order.pk)

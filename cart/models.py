@@ -7,7 +7,7 @@ COMMISSION_RATE = Decimal("0.05")
 STATUS_CHOICES = [
     ("pending", "Pending"),
     ("confirmed", "Confirmed"),
-    ("ready", "Ready for Collection/Delivery"),
+    ("ready", "Ready for Delivery"),
     ("delivered", "Delivered"),
 ]
 
@@ -111,6 +111,11 @@ class OrderItem(models.Model):
     )
     quantity = models.PositiveIntegerField()
     item_price = models.DecimalField(max_digits=8, decimal_places=2)
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="pending",
+    )
 
     def __str__(self):
         return f"{self.quantity}x {self.product.name} @ £{self.item_price}"

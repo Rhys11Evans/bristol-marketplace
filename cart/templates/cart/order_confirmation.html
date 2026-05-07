@@ -8,17 +8,18 @@
 <div class="summary-box">
     <h2 style="margin-bottom:0.25rem;">Order #{{ order.pk }}</h2>
     <p style="font-size:0.9rem; color:#777; margin-bottom:1rem;">
-        Placed {{ order.created_at|date:"d M Y, H:i" }} · Status: <strong>{{ order.get_status_display }}</strong>
+        Placed {{ order.created_at|date:"d M Y, H:i" }}
     </p>
 
     <div class="table-container" style="--table-rows: 6;">
         <table>
             <colgroup>
-                <col style="width: 22%;">
                 <col style="width: 18%;">
-                <col style="width: 20%;">
-                <col style="width: 12%;">
+                <col style="width: 14%;">
+                <col style="width: 14%;">
                 <col style="width: 10%;">
+                <col style="width: 8%;">
+                <col style="width: 12%;">
                 <col style="width: 14%;">
             </colgroup>
             <thead>
@@ -53,6 +54,7 @@
                         {% if sort_by == "total_price" %}{% if sort_dir == "asc" %}▲{% else %}▼{% endif %}{% endif %}
                         {% if secondary == "total_price" %}{% if secondary_dir == "asc" %}△{% else %}▽{% endif %}{% endif %}
                     </a></th>
+                    <th>Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -64,6 +66,7 @@
                     <td>£{{ item.item_price }}</td>
                     <td>{{ item.quantity }}</td>
                     <td>£{{ item.line_total|floatformat:2 }}</td>
+                    <td>{{ item.get_status_display }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -105,6 +108,21 @@
             <span>£{{ total|floatformat:2 }}</span>
         </div>
     </div>
+
+    {% if order.status != "delivered" and user.is_producer or user.is_staff %}
+    <div style="margin-top:1rem; text-align:right;">
+        <form method="post" action="{% url 'cart:update_order_status' order.pk %}" class="inline-form">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline">
+                Mark as
+                {% if order.status == "pending" %}Confirmed
+                {% elif order.status == "confirmed" %}Ready
+                {% elif order.status == "ready" %}Delivered
+                {% endif %}
+            </button>
+        </form>
+    </div>
+    {% endif %}
 </div>
 
 <div style="margin-top:2rem; display:flex; gap:1rem;">

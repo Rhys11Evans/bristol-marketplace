@@ -23,4 +23,8 @@ urlpatterns = [
     # S2-T1: JWT token endpoints
     path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
+    # S3: Admin endpoints
+    path('admin/users/', views.AdminUserListView.as_view(), name='admin_user_list'),
+    path('admin/users/<int:pk>/', views.AdminUserDetailView.as_view(), name='admin_user_detail'),
 ]

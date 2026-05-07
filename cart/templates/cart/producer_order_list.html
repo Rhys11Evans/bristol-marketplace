@@ -2,13 +2,14 @@
 {% block title %}My Orders – Bristol Food Network{% endblock %}
 
 {% block content %}
-<h1>My Orders</h1>
+<h1>Orders to Fulfil</h1>
 
 {% if orders %}
 <table>
     <thead>
         <tr>
             <th>Order #</th>
+            <th>Customer</th>
             <th>Date</th>
             <th>Total</th>
             <th></th>
@@ -18,10 +19,11 @@
         {% for order in orders %}
         <tr>
             <td><strong>#{{ order.pk }}</strong></td>
+            <td>{{ order.user.username }}</td>
             <td>{{ order.created_at|date:"d M Y, H:i" }}</td>
             <td>£{{ order.total_price|floatformat:2 }}</td>
             <td class="text-right">
-                <a href="{% url 'cart:order_confirmation' order.pk %}" class="btn btn-outline btn-sm">View</a>
+                <a href="{% url 'cart:producer_order_detail' order.pk %}" class="btn btn-outline btn-sm">View</a>
             </td>
         </tr>
         {% endfor %}
@@ -29,10 +31,7 @@
 </table>
 {% else %}
 <div class="empty">
-    <p>No orders yet.</p>
-    <a href="{% url 'cart:product_list' %}" class="btn btn-primary" style="margin-top:1rem; display:inline-block;">
-        Start Shopping
-    </a>
+    <p>No orders to fulfil yet.</p>
 </div>
 {% endif %}
 {% endblock %}
