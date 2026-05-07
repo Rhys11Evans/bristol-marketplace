@@ -11,6 +11,7 @@ class User(AbstractUser):
     class Role(models.TextChoices):
         CUSTOMER = 'CUSTOMER', 'Customer'
         PRODUCER = 'PRODUCER', 'Producer'
+        ADMIN = 'ADMIN', 'Admin'
 
     role = models.CharField(
         max_length=10,
@@ -31,3 +32,7 @@ class User(AbstractUser):
     @property
     def is_customer(self):
         return self.role == self.Role.CUSTOMER
+
+    @property
+    def is_admin(self):
+        return self.role == self.Role.ADMIN
