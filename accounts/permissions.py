@@ -29,3 +29,17 @@ class IsCustomer(BasePermission):
             and request.user.is_authenticated
             and request.user.is_customer
         )
+
+
+class IsAdmin(BasePermission):
+    """
+    Only users with role=ADMIN can access.
+    """
+    message = 'Only admins can perform this action.'
+
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and request.user.is_admin
+        )

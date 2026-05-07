@@ -10,16 +10,20 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from datetime import timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-*kulih^9o)79ukftspzew@k^uuq-g*bi6h2&6r+*$mreq-qlat'
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY',
+    'django-insecure-*kulih^9o)79ukftspzew@k^uuq-g*bi6h2&6r+*$mreq-qlat',
+)
 
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -69,11 +73,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "marketplace",
-        "USER": "marketplace",
-        "PASSWORD": "marketplace",
-        "HOST": "db",
-        "PORT": "5432",
+        "NAME": os.environ.get('DB_NAME', 'marketplace'),
+        "USER": os.environ.get('DB_USER', 'marketplace'),
+        "PASSWORD": os.environ.get('DB_PASSWORD', 'marketplace'),
+        "HOST": os.environ.get('DB_HOST', 'db'),
+        "PORT": os.environ.get('DB_PORT', '5432'),
     }
 }
 
@@ -87,7 +91,25 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/day',
+        'user': '1000/day',
+        'auth': '10/min',
+    },
 }
+
+# Production security headers — only active when DEBUG=False
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
@@ -121,3 +143,6 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGIN_REDIRECT_URL = '/shop/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'

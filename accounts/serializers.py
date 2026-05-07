@@ -24,9 +24,9 @@ class RegisterSerializer(serializers.ModelSerializer):
             )
         # Only allow CUSTOMER or PRODUCER
         role = attrs.get('role', User.Role.CUSTOMER)
-        if role not in [User.Role.CUSTOMER, User.Role.PRODUCER]:
+        if role not in [User.Role.CUSTOMER, User.Role.PRODUCER, User.Role.ADMIN]:
             raise serializers.ValidationError(
-                {'role': 'Role must be CUSTOMER or PRODUCER.'}
+                {'role': 'Role must be CUSTOMER, PRODUCER, or ADMIN.'}
             )
         return attrs
 
@@ -47,6 +47,28 @@ class LoginSerializer(serializers.Serializer):
     """Serializer for login request."""
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
+
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    """Full user details visible to admin."""
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'role', 'is_active', 'date_joined', 'last_login']
+        read_only_fields = ['id', 'username', 'email', 'date_joined', 'last_login']
+
+
+class UpdateRoleSerializer(serializers.ModelSerializer):
+    """Admin can update a user's role or active status."""
+
+    class Meta:
+        model = User
+        fields = ['role', 'is_active']
+
+    def validate_role(self, value):
+        if value not in [User.Role.CUSTOMER, User.Role.PRODUCER, User.Role.ADMIN]:
+            raise serializers.ValidationError('Invalid role.')
+        return value
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):

@@ -227,12 +227,21 @@
 <body>
 
 <nav>
-    <a href="{% url 'cart:product_list' %}" class="brand">Bristol Food Network</a>
+    <a href="{% url 'cart:home' %}" class="brand">Bristol Food Network</a>
     <div class="links">
-        <a href="{% url 'cart:product_list' %}">Shop</a>
-        <a href="{% url 'cart:cart_list' %}">My Carts</a>
-        <a href="{% url 'cart:order_list' %}">Orders</a>
-        <a href="{% url 'admin:index' %}">Admin</a>
+        {% if user.is_authenticated %}
+            {% if user.is_producer %}
+            <a href="{% url 'cart:producer_order_list' %}">My Orders</a>
+            {% else %}
+            <a href="{% url 'cart:product_list' %}">Shop</a>
+            <a href="{% url 'cart:cart_list' %}">My Carts</a>
+            <a href="{% url 'cart:order_list' %}">Orders</a>
+            {% endif %}
+            {% if user.is_staff %}<a href="{% url 'admin:index' %}">Admin</a>{% endif %}
+            <a href="{% url 'cart:logout' %}">Logout ({{ user.username }})</a>
+        {% else %}
+            <a href="{% url 'login' %}">Login</a>
+        {% endif %}
     </div>
 </nav>
 

@@ -1,0 +1,23 @@
+{% extends "cart/base.html" %}
+{% block title %}Login – Bristol Food Network{% endblock %}
+
+{% block content %}
+<div style="max-width:400px; margin:2rem auto;">
+    <h1>Login</h1>
+    <form method="post" style="margin-top:1rem;">
+        {% csrf_token %}
+        <div style="margin-bottom:1rem;">
+            <label for="id_username" style="display:block; margin-bottom:0.3rem;">Username</label>
+            <input type="text" name="username" id="id_username" required style="width:100%; padding:0.5rem;">
+        </div>
+        <div style="margin-bottom:1rem;">
+            <label for="id_password" style="display:block; margin-bottom:0.3rem;">Password</label>
+            <input type="password" name="password" id="id_password" required style="width:100%; padding:0.5rem;">
+        </div>
+        {% if form.errors %}
+        <div class="msg error">Invalid username or password.</div>
+        {% endif %}
+        <button type="submit" class="btn btn-primary" style="width:100%;">Login</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "cart/base.html" %}
+{% block title %}Order #{{ order.pk }} – Bristol Food Network{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+    <h1>Order #{{ order.pk }}</h1>
+    <a href="{% url 'cart:producer_order_list' %}" class="btn btn-outline">Back to Orders</a>
+</div>
+
+<p style="color:#777; margin-bottom:1rem;">
+    Customer: <strong>{{ order.user.username }}</strong> ·
+    Placed {{ order.created_at|date:"d M Y, H:i" }}
+</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>Unit Price</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td><strong>{{ item.product.name }}</strong></td>
+            <td>{{ item.quantity }}</td>
+            <td>£{{ item.item_price }}</td>
+            <td>£{{ item.line_total|floatformat:2 }}</td>
+            <td>{{ item.get_status_display }}</td>
+            <td>
+                {% if item.status != "delivered" %}
+                <form method="post" action="{% url 'cart:update_item_status' item.pk %}" class="inline-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        Mark
+                        {% if item.status == "pending" %}Confirmed
+                        {% elif item.status == "confirmed" %}Ready
+                        {% elif item.status == "ready" %}Delivered
+                        {% endif %}
+                    </button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
