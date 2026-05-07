@@ -108,21 +108,6 @@
             <span>£{{ total|floatformat:2 }}</span>
         </div>
     </div>
-
-    {% if order.status != "delivered" and user.is_producer or user.is_staff %}
-    <div style="margin-top:1rem; text-align:right;">
-        <form method="post" action="{% url 'cart:update_order_status' order.pk %}" class="inline-form">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-outline">
-                Mark as
-                {% if order.status == "pending" %}Confirmed
-                {% elif order.status == "confirmed" %}Ready
-                {% elif order.status == "ready" %}Delivered
-                {% endif %}
-            </button>
-        </form>
-    </div>
-    {% endif %}
 </div>
 
 <div style="margin-top:2rem; display:flex; gap:1rem;">
